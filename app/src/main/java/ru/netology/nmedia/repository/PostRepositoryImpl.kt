@@ -81,7 +81,17 @@ class PostRepositoryImpl(
     }
 
     override suspend fun removeById(id: Long) {
-        TODO("Not yet implemented")
+        try {
+            val response = Api.service.removeById(id)
+            if (!response.isSuccessful) {
+                throw ApiError(response.code(), response.message())
+            }
+            postDao.removeById(id)
+        } catch (e: IOException) {
+            throw NetworkError
+        } catch (e: Exception) {
+            throw UnknownError
+        }
     }
 
     override suspend fun likeById(id: Long) {
@@ -123,11 +133,11 @@ class PostRepositoryImpl(
         }
     }
 
-    override suspend fun saveWork(post: Post, upload: MediaUpload?): Long {
+    override suspend fun saveWork(post: Post, uri: Uri?): Long {
         try {
             val entity = PostWorkEntity.fromDto(post).apply {
-                if (upload != null) {
-                    this.uri = upload.file.toUri().toString()
+                if (uri != null) {
+                    this.uri = uri.toString()
                 }
             }
             return postWorkDao.insert(entity)
@@ -142,7 +152,11 @@ class PostRepositoryImpl(
             val entity = postWorkDao.getById(id)
             if (entity.uri != null) {
                 val upload = MediaUpload(Uri.parse(entity.uri).toFile())
+                saveWithAttachment(entity.toDto(), upload)
+            } else {
+                save(entity.toDto())
             }
+            postWorkDao.removeById(id)
             println(entity.id)
         } catch (e: Exception) {
             throw UnknownError

@@ -1,5 +1,6 @@
 package ru.netology.nmedia.repository
 
+import android.net.Uri
 import kotlinx.coroutines.flow.Flow
 import ru.netology.nmedia.dto.Media
 import ru.netology.nmedia.dto.MediaUpload
@@ -14,7 +15,7 @@ interface PostRepository {
     suspend fun removeById(id: Long)
     suspend fun likeById(id: Long)
     suspend fun upload(upload: MediaUpload): Media
-    suspend fun saveWork(post: Post, upload: MediaUpload?): Long
+    suspend fun saveWork(post: Post, uri: Uri?): Long
     suspend fun processWork(id: Long)
 }
 

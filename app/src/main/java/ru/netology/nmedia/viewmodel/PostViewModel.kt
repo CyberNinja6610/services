@@ -20,6 +20,7 @@ import ru.netology.nmedia.model.PhotoModel
 import ru.netology.nmedia.repository.PostRepository
 import ru.netology.nmedia.repository.PostRepositoryImpl
 import ru.netology.nmedia.util.SingleLiveEvent
+import ru.netology.nmedia.work.RemovePostWorker
 import ru.netology.nmedia.work.SavePostWorker
 
 private val empty = Post(
@@ -101,7 +102,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
             viewModelScope.launch {
                 try {
                     val id = repository.saveWork(
-                        it, _photo.value?.uri?.let { MediaUpload(it.toFile()) }
+                        it, _photo.value?.uri
                     )
                     val data = workDataOf(SavePostWorker.postKey to id)
                     val constraints = Constraints.Builder()
@@ -144,7 +145,22 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         TODO()
     }
 
-    fun removeById(id: Long) {
-        TODO()
+    fun removeById(id: Long) = viewModelScope.launch {
+        try {
+            val data = workDataOf(RemovePostWorker.postKey to id)
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val request = OneTimeWorkRequestBuilder<RemovePostWorker>()
+                .setInputData(data)
+                .setConstraints(constraints)
+                .build()
+            workManager.enqueue(request)
+            _dataState.value = FeedModelState()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            _dataState.value = FeedModelState(error = true)
+        }
     }
+
 }
